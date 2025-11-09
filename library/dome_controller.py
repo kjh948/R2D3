@@ -45,11 +45,7 @@ class DomeController:
         GPIO.setup(self.encoder_b_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.zero_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        # counts and scaling
-        self.counts_per_rev = counts_per_rev
-        self.counts_per_degree = counts_per_rev / 360.0
-        self.tolerance_counts = 1#max(1, int(self.counts_per_degree * tolerance_degrees))
-
+        self.tolerance_counts = 1
         # state
         self._lock = threading.Lock()
         self.encoder_count = 0   # absolute count (set at homing)
@@ -113,59 +109,25 @@ class DomeController:
 
         start = time.time()
         while time.time() - start < timeout:
-            with self._lock:
+            if self.homed == True:
+                break
+            #time.sleep(0.01)
+        if self.homed == False:
+            dir_cmd = Emakefun_MotorHAT.FORWARD if search_direction == 'ccw' else Emakefun_MotorHAT.BACKWARD
+            speed *= 1.5
+            self.dome_motor.setSpeed(speed)
+            self.dome_motor.run(dir_cmd)
+            while time.time() - start < timeout:
                 if self.homed == True:
                     break
-            #time.sleep(0.01)
-
         self.dome_motor.run(Emakefun_MotorHAT.RELEASE)
         return self.homed
 
-    def current_angle(self):
+    def current_count(self):
         with self._lock:
-            return (self.encoder_count / self.counts_per_degree)
+            return (self.encoder_count )
 
-    def move_to_angle(self, target_angle, timeout=30.0):
-        """
-        Closed-loop movement using encoder counts.
-        target_angle: absolute angle in degrees (0..360 typically)
-        This implementation assumes homed reference (home() called).
-        """
-        if not self.homed:
-            raise RuntimeError("DomeController: not homed. Call home() before position moves.")
-
-        target_count = int(round(target_angle * self.counts_per_degree))
-
-        start = time.time()
-        while time.time() - start < timeout:
-            with self._lock:
-                current = self.encoder_count
-            error = target_count - current
-            if abs(error) <= self.tolerance_counts:
-                break
-            #print("Current:", current, "Target:", target_count, "Error:", error)
-            # proportional speed
-            speed = int(min(self.max_speed, max(self.min_speed, abs(error) * self.kp)))
-            self.dome_motor.setSpeed(speed)
-            if error < 0:
-                self.dome_motor.run(Emakefun_MotorHAT.FORWARD)
-            else:
-                self.dome_motor.run(Emakefun_MotorHAT.BACKWARD)
-
-            # short wait then re-evaluate
-            time.sleep(0.02)
-
-        self.dome_motor.run(Emakefun_MotorHAT.RELEASE)
-        return abs(target_count - self.encoder_count) <= self.tolerance_counts
-
-    def move_by_delta(self, delta_degrees, timeout=30.0):
-        """Move relative degrees from current position."""
-        with self._lock:
-            start_count = self.encoder_count
-        target_count = start_count + int(round(delta_degrees * self.counts_per_degree))
-        return self._move_to_count(target_count, timeout)
-
-    def _move_to_count(self, target_count, timeout=30.0):
+    def move_to_count(self, target_count, timeout=30.0):
         start = time.time()
         while time.time() - start < timeout:
             with self._lock:
@@ -180,42 +142,30 @@ class DomeController:
                 self.dome_motor.run(Emakefun_MotorHAT.FORWARD)
             else:
                 self.dome_motor.run(Emakefun_MotorHAT.BACKWARD)
-            #time.sleep(0.02)
+
         self.dome_motor.run(Emakefun_MotorHAT.RELEASE)
         return abs(target_count - self.encoder_count) <= self.tolerance_counts
 
-    def set_positions(self, positions_dict):
-        """positions: dict mapping name->angle (degrees)"""
-        self.positions = positions_dict
-
-    def move_to_named_position(self, name, timeout=30.0):
-        if not hasattr(self, 'positions') or name not in self.positions:
-            raise KeyError("Unknown position: " + str(name))
-        return self.move_to_angle(self.positions[name], timeout=timeout)
 
 if __name__ == "__main__":
     # example usage
     dc = DomeController(counts_per_rev=4096, kp=0.1, min_speed=30, max_speed=150)
-    # positions can be filled based on README or project convention
-    dc.set_positions({
-        "home": 0,
-        "open": 5,
-        "closed": 0,
-    })
 
     print("Homing...")
-    if dc.home(search_direction='ccw', speed=50, timeout=1.0):
-        print("Homing successful.")
-        pass
-    else:
-        print("Homing failed, retrying clockwise...")
-        dc.home(search_direction='cw', speed=80, timeout=1.0)
-    print("Homed. current angle:", dc.current_angle())
-    print("Move to open (90 deg)...")
-    #ok = dc.move_to_named_position("open")
-    dc._move_to_count(3)
-    dc._move_to_count(-3)
-    dc._move_to_count(2)
-    dc._move_to_count(-2)
+    dc.home(search_direction='ccw', speed=50, timeout=5.0)
+    # if :
+    #     print("Homing successful.")
+    #     pass
+    # else:
+    #     print("Homing failed, retrying clockwise...")
+    #     dc.home(search_direction='cw', speed=80, timeout=1.0)
+    print("Homed. current angle:", dc.current_count())
 
-    print("angle:", dc.current_angle())
+    dc.move_to_count(5)
+    dc.move_to_count(3)
+    dc.move_to_count(0)
+    dc.move_to_count(-3)
+    dc.move_to_count(2)
+    dc.move_to_count(0)
+
+    print("count:", dc.current_count())

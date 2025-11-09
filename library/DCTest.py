@@ -4,7 +4,7 @@ from Emakefun_MotorHAT import Emakefun_MotorHAT, Emakefun_DCMotor, Emakefun_Serv
 import time
 import atexit
 
-vel = 25
+vel = 100
 # create a default object, no changes to I2C address or frequency
 mh = Emakefun_MotorHAT(addr=0x60)
 
@@ -20,14 +20,18 @@ atexit.register(turnOffMotors)
 ################################# DC motor test!
 myMotorL = mh.getMotor(1)
 myMotorR = mh.getMotor(2)
+myMotorD = mh.getMotor(3)
 
 # set the speed to start, from 0 (off) to 255 (max speed)
 myMotorL.setSpeed(vel)
 myMotorR.setSpeed(vel)
+myMotorD.setSpeed(vel)
 myMotorL.run(Emakefun_MotorHAT.BACKWARD)
 myMotorR.run(Emakefun_MotorHAT.FORWARD)
-time.sleep(3)
+myMotorD.run(Emakefun_MotorHAT.FORWARD)
+time.sleep(1)
 # turn on motor
 myMotorL.run(Emakefun_MotorHAT.RELEASE)
 myMotorR.run(Emakefun_MotorHAT.RELEASE)
+myMotorD.run(Emakefun_MotorHAT.RELEASE)
 
