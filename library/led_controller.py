@@ -11,7 +11,7 @@ from rpi_ws281x import PixelStrip, Color
 
 # LED strip configuration:
 LED_COUNT = 2        # Number of LED pixels.
-LED_PIN = 6         # GPIO pin connected to the pixels (must support PWM!)
+LED_PIN = 21         # GPIO pin connected to the pixels (must support PWM!)
 LED_FREQ_HZ = 800000  # LED signal frequency in hertz (usually 800khz)
 LED_DMA = 10        # DMA channel to use for generating signal
 LED_BRIGHTNESS = 255 # Set to 0 for darkest and 255 for brightest
@@ -87,6 +87,56 @@ class LEDController:
             self.set_all_color(scaled_r, scaled_g, scaled_b)
             time.sleep(duration)
 
+    def wheel(self, pos):
+        """Generate rainbow colors across 0-255 positions."""
+        if pos < 85:
+            return Color(pos * 3, 255 - pos * 3, 0)
+        elif pos < 170:
+            pos -= 85
+            return Color(255 - pos * 3, 0, pos * 3)
+        else:
+            pos -= 170
+            return Color(0, pos * 3, 255 - pos * 3)
+
+    def theater_chase(self, r, g, b, wait_ms=50, iterations=10):
+        """Movie theater light style chaser animation."""
+        for j in range(iterations):
+            for q in range(3):
+                for i in range(0, self.strip.numPixels(), 3):
+                    self.strip.setPixelColor(i + q, Color(r, g, b))
+                self.strip.show()
+                time.sleep(wait_ms / 1000.0)
+                for i in range(0, self.strip.numPixels(), 3):
+                    self.strip.setPixelColor(i + q, 0)
+
+    def rainbow(self, wait_ms=20, iterations=1):
+        """Draw rainbow that fades across all pixels at once."""
+        for j in range(256 * iterations):
+            for i in range(self.strip.numPixels()):
+                self.strip.setPixelColor(i, self.wheel((i + j) & 255))
+            self.strip.show()
+            time.sleep(wait_ms / 1000.0)
+
+    def rainbow_cycle(self, wait_ms=20, iterations=5):
+        """Draw rainbow that uniformly distributes itself across all pixels."""
+        for j in range(256 * iterations):
+            for i in range(self.strip.numPixels()):
+                self.strip.setPixelColor(i, self.wheel(
+                    ((i * 256 // self.strip.numPixels()) + j) & 255))
+            self.strip.show()
+            time.sleep(wait_ms / 1000.0)
+
+    def theater_chase_rainbow(self, wait_ms=50):
+        """Rainbow movie theater light style chaser animation."""
+        for j in range(256):
+            for q in range(3):
+                for i in range(0, self.strip.numPixels(), 3):
+                    self.strip.setPixelColor(i + q, self.wheel((i + j) % 255))
+                self.strip.show()
+                time.sleep(wait_ms / 1000.0)
+                for i in range(0, self.strip.numPixels(), 3):
+                    self.strip.setPixelColor(i + q, 0)
+
     # Predefined patterns
     def pattern_warning(self, duration=2.0):
         """Warning pattern - Red blink"""
@@ -129,13 +179,26 @@ if __name__ == "__main__":
     try:
         print("Testing LED patterns...")
         
-        # Basic color test
-        print("Testing solid colors...")
-        for color in [RED, GREEN, BLUE, WHITE]:
-            led.set_all_color(color)
-            time.sleep(1)
+        # Test rainbow patterns
+        print("Testing rainbow patterns...")
+        led.rainbow()
+        time.sleep(1)
         
-        # Test patterns
+        print("Testing theater chase...")
+        led.theater_chase(255, 0, 0)  # Red theater chase
+        time.sleep(1)
+        led.theater_chase(0, 0, 255)  # Blue theater chase
+        time.sleep(1)
+        
+        print("Testing rainbow cycle...")
+        led.rainbow_cycle()
+        time.sleep(1)
+        
+        print("Testing theater chase rainbow...")
+        led.theater_chase_rainbow()
+        time.sleep(1)
+        
+        # Test predefined patterns
         print("Warning pattern...")
         led.pattern_warning(duration=2.0)
         

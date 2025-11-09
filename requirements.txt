@@ -8,4 +8,4 @@ RPi.GPIO>=0.7.0
 smbus2>=0.4.1
 
 # Additional dependencies
-numpy>=1.19.0  # numerical operations
+#numpy>=1.19.0  # numerical operations

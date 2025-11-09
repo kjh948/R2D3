@@ -22,3 +22,9 @@ R2D2 facelift
 - LED
  : with 2 ws2812 LED at the head
  : API that control the LED patterns
+
+
+
+
+# note
+export AUDIODEV=hw:0 for sox
