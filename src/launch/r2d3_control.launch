@@ -1,0 +1,13 @@
+<launch>
+  <!-- Dome control node -->
+  <!-- <node pkg="r2d3_control" type="dome_node.py" name="dome_node" output="screen" /> -->
+  
+  <!-- LED control node (runs with sudo for GPIO/I2C access) -->
+  <!-- <node pkg="r2d3_control" type="led_node.py" name="led_node" output="screen" launch-prefix="sudo /tmp/run_led_node_sudo.sh" /> -->
+  
+  <!-- Motor control node -->
+  <node pkg="r2d3_control" type="motor_node.py" name="motor_node" output="screen" />
+  
+  <!-- Audio node (emotion-based audio playback) - commented out for now due to service import issue -->
+  <node pkg="r2d3_control" type="audio_node.py" name="audio_node" output="screen" />
+</launch>

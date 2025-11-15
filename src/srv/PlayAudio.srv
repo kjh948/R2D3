@@ -1,0 +1,6 @@
+# Request: emotion folder name (Annoyed, Chat, Fun, Happy, Ooh, Question, Scared, Scream, Yell)
+string emotion
+---
+# Response: success and optional message
+bool success
+string message

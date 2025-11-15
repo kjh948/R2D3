@@ -49,7 +49,7 @@ class DomeController:
         # state
         self._lock = threading.Lock()
         self.encoder_count = 0   # absolute count (set at homing)
-        self.homed = False
+        self.homed = True
         self._running = True
 
         # attach encoder callback (quadrature: use A edges)
